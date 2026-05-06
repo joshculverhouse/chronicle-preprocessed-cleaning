@@ -1,0 +1,43 @@
+app_package_name,reason
+com.openlattice.chronicle,Chronicle data-collection app; not target smartphone use
+com.sec.android.app.clockpackage,clock/alarm app; can produce long foreground/background events
+com.google.android.deskclock,clock/alarm app; can produce long foreground/background events
+com.lge.launcher3,launcher/home screen; can produce long foreground events
+com.motorola.launcher3,launcher/home screen; can produce long foreground events
+bitpit.launcher,launcher/home screen; can produce long foreground events
+com.sec.android.app.launcher,launcher/home screen; can produce long foreground events
+com.android.dreams.basic,screensaver/dream service; not typical active app use
+com.water.reminder.tracker,reviewed as potentially implausible/background app in original cleaning script
+com.android.dreams.phototable,screensaver/dream service; not typical active app use
+com.snorelab.app,reviewed as potentially implausible/background app in original cleaning script
+com.google.android.apps.nexuslauncher,launcher/home screen; can produce long foreground events
+com.facebook.katana,reviewed as potentially implausible/background app in original cleaning script
+com.transsion.hilauncher.upgrade,launcher/home screen; can produce long foreground events
+com.hualai,reviewed as potentially implausible/background app in original cleaning script
+com.transsion.hilauncher,launcher/home screen; can produce long foreground events
+com.tplink.kasa_android,reviewed as potentially implausible/background app in original cleaning script
+com.spotlightsix.zentimerlite2,reviewed as potentially implausible/background app in original cleaning script
+com.rlk.weathers,reviewed as potentially implausible/background app in original cleaning script
+com.android.settings,system settings; can produce non-target long events
+com.android.launcher,launcher/home screen; can produce long foreground events
+com.android.incallui,phone call interface; review/truncate long events by default
+com.teslacoilsw.launcher,launcher/home screen; can produce long foreground events
+com.samsung.sdm.sdmviewer,reviewed as potentially implausible/background app in original cleaning script
+com.qcymall.googleearphonesetup,reviewed as potentially implausible/background app in original cleaning script
+com.huawei.android.launcher,launcher/home screen; can produce long foreground events
+com.transsion.applock,reviewed as potentially implausible/background app in original cleaning script
+com.transsion.deskclock,clock/alarm app; can produce long foreground/background events
+com.sec.android.easyMover,reviewed as potentially implausible/background app in original cleaning script
+com.transsion.phonemaster,reviewed as potentially implausible/background app in original cleaning script
+com.huawei.camera,camera/OEM app; included from original reviewed list
+com.samsung.sree,reviewed as potentially implausible/background app in original cleaning script
+com.google.android.apps.translate,reviewed as potentially implausible/background app in original cleaning script
+us.mitene,reviewed as potentially implausible/background app in original cleaning script
+com.truecaller,reviewed as potentially implausible/background app in original cleaning script
+com.pg.clubpampers.android.us,reviewed as potentially implausible/background app in original cleaning script
+com.wssyncmldm,Android/system service; not typical active app use
+android.instant_app,Android/system service; not typical active app use
+com.android.systemui,Android/system service; not typical active app use
+com.google.android.gms,Android/system service; not typical active app use
+epic.mychart.android,reviewed as potentially implausible/background app in original cleaning script
+com.uba.vericash,reviewed as potentially implausible/background app in original cleaning script
