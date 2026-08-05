@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Chronicle Preprocessed Cleaning</title>
+  <link rel="stylesheet" href="web/styles.css">
+</head>
+<body>
+  <main class="page-shell">
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Chronicle-compatible Android event logs</p>
+        <h1>Chronicle Preprocessed Cleaning</h1>
+        <p class="lede">
+          Clean preprocessed Chronicle CSV files, create participant-level outputs, and retain the audit logs needed for review.
+        </p>
+      </div>
+      <div id="statusBadge" class="status-badge status-loading">Loading R…</div>
+    </header>
+
+    <section class="card privacy-note">
+      <div>
+        <strong>Runs locally in your browser.</strong>
+        <p>Your files remain on your computer. This page does not upload source data to a server.</p>
+      </div>
+    </section>
+
+    <section class="card instructions">
+      <h2>Before running</h2>
+      <ol>
+        <li>Use a current version of <strong>Chrome or Edge</strong>.</li>
+        <li>Select the folder containing the preprocessed participant CSV files. Subfolders are included.</li>
+        <li>Select a separate, empty output folder. The app will create cleaned CSVs and <code>logs/</code> within it.</li>
+      </ol>
+    </section>
+
+    <section class="card controls-card">
+      <div class="control-grid">
+        <label>
+          <span>Device type</span>
+          <select id="deviceType">
+            <option value="parent" selected>Parent device</option>
+            <option value="child">Child device</option>
+          </select>
+          <small>Parent devices use the long-gap partial-day rule; child devices do not.</small>
+        </label>
+
+        <fieldset class="bad-apps-choice">
+          <legend>Bad-app list</legend>
+          <label class="radio-label">
+            <input type="radio" name="badAppsSource" value="repository" checked>
+            <span>Use the repository list (<code>bad_apps.csv</code>)</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="badAppsSource" value="custom">
+            <span>Use my own CSV</span>
+          </label>
+          <input id="customBadApps" type="file" accept=".csv,text/csv" disabled>
+          <small>Your CSV must contain <code>app_package_name</code>; <code>reason</code> is optional.</small>
+        </fieldset>
+      </div>
+
+      <div class="folder-row">
+        <button id="selectInputFolder" class="button button-secondary" type="button">Select input folder</button>
+        <div>
+          <div id="inputFolderName" class="folder-name">No input folder selected</div>
+          <div class="hint">All CSV files in this folder and its subfolders will be processed.</div>
+        </div>
+      </div>
+
+      <div class="folder-row">
+        <button id="selectOutputFolder" class="button button-secondary" type="button">Select output folder</button>
+        <div>
+          <div id="outputFolderName" class="folder-name">No output folder selected</div>
+          <div class="hint">This folder must be empty. It will receive the cleaned CSVs and audit logs.</div>
+        </div>
+      </div>
+
+      <details class="advanced-settings">
+        <summary>Advanced options</summary>
+        <p>These settings use the current script defaults. Change them only when your cleaning plan requires it.</p>
+
+        <div class="control-grid control-grid-three">
+          <label>
+            <span>Duration-bearing interaction types</span>
+            <input id="durationTypes" type="text" value="App Usage, Session, Glance">
+          </label>
+          <label>
+            <span>Collapse interaction types</span>
+            <input id="collapseTypes" type="text" value="App Usage">
+          </label>
+          <label>
+            <span>Session gap (seconds)</span>
+            <input id="sessionGapSecs" type="number" min="0" step="1" value="1">
+          </label>
+          <label>
+            <span>Bad-app maximum (minutes)</span>
+            <input id="maxBadAppMins" type="number" min="0" step="0.1" value="10">
+          </label>
+          <label>
+            <span>Long-event review threshold (hours)</span>
+            <input id="long3hHours" type="number" min="0" step="0.1" value="3">
+          </label>
+          <label>
+            <span>Long-event action threshold (hours)</span>
+            <input id="long6hHours" type="number" min="0" step="0.1" value="6">
+          </label>
+          <label>
+            <span>Long data-gap threshold (hours)</span>
+            <input id="longGapHours" type="number" min="0" step="0.1" value="12">
+          </label>
+          <label>
+            <span>Long-event action</span>
+            <select id="longEventAction">
+              <option value="none">Keep and log</option>
+              <option value="truncate_to_bad_app" selected>Truncate to bad-app maximum</option>
+              <option value="truncate_to_6h">Truncate to 6 hours</option>
+              <option value="drop">Drop the event</option>
+            </select>
+          </label>
+          <label>
+            <span>Apply long-event action to</span>
+            <select id="longEventScope">
+              <option value="all" selected>All duration-bearing rows</option>
+              <option value="app_usage_only">App Usage only</option>
+            </select>
+          </label>
+        </div>
+      </details>
+
+      <div class="safety-note">
+        <strong>Overwrite protection:</strong> source files are never edited. The run stops before writing if the output folder is not empty. If a processing error occurs after writing begins, the app removes files it created where possible.
+      </div>
+
+      <button id="runButton" class="button button-primary" type="button" disabled>Validate and run</button>
+    </section>
+
+    <section class="card log-card">
+      <div class="log-heading">
+        <h2>Run log</h2>
+        <button id="clearLog" class="text-button" type="button">Clear</button>
+      </div>
+      <pre id="log" aria-live="polite">Starting webR…</pre>
+    </section>
+
+    <footer class="site-footer">
+      The local R-script workflow remains available in this repository for users who prefer to run it directly.
+    </footer>
+  </main>
+
+  <script type="module" src="web/app.js"></script>
+</body>
+</html>

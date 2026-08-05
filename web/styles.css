@@ -1,0 +1,73 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #172033;
+  background: #f3f6fb;
+  line-height: 1.5;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, select, input { font: inherit; }
+
+.page-shell { width: min(1040px, calc(100% - 32px)); margin: 40px auto 72px; }
+.hero { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; margin-bottom: 24px; }
+.hero-copy { max-width: 790px; }
+.eyebrow { margin: 0 0 6px; font-size: .78rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; color: #52647e; }
+h1, h2 { margin-top: 0; }
+h1 { margin-bottom: 10px; font-size: clamp(2rem, 4vw, 3.1rem); line-height: 1.05; letter-spacing: -.035em; }
+h2 { font-size: 1.15rem; }
+.lede { margin: 0; color: #536176; font-size: 1.05rem; }
+
+.status-badge { flex: 0 0 auto; border-radius: 999px; padding: 8px 13px; font-size: .86rem; font-weight: 700; white-space: nowrap; }
+.status-loading { background: #fff3cd; color: #735b00; }
+.status-ready, .status-success { background: #dff6e8; color: #175c34; }
+.status-running { background: #dbeafe; color: #1e4f91; }
+.status-error { background: #fee2e2; color: #991b1b; }
+
+.card { background: #fff; border: 1px solid #dfe6f0; border-radius: 16px; box-shadow: 0 8px 28px rgba(32, 51, 83, .07); padding: 24px; margin-bottom: 18px; }
+.privacy-note { display: flex; gap: 12px; align-items: flex-start; border-left: 4px solid #2b7a4b; background: #effaf3; color: #24553a; }
+.privacy-note p { margin: 0; }
+.instructions ol { margin: 0; padding-left: 22px; }
+.instructions li + li { margin-top: 7px; }
+code { background: #eef2f7; border-radius: 5px; padding: 2px 5px; overflow-wrap: anywhere; }
+
+.control-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-bottom: 22px; }
+.control-grid-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+label > span, legend { display: block; font-weight: 700; margin-bottom: 7px; }
+select, input[type="number"], input[type="text"], input[type="file"] { width: 100%; min-height: 44px; border: 1px solid #bfc9d8; border-radius: 9px; padding: 8px 12px; background: #fff; color: #172033; }
+input[type="file"] { padding: 8px; }
+small { display: block; margin-top: 6px; color: #657287; font-weight: 400; line-height: 1.35; }
+
+.bad-apps-choice { border: 1px solid #d7dfeb; border-radius: 10px; padding: 12px 14px; min-width: 0; }
+.bad-apps-choice legend { padding: 0 5px; }
+.radio-label { display: flex; gap: 9px; align-items: flex-start; margin: 7px 0; cursor: pointer; }
+.radio-label span { margin: 0; font-weight: 500; }
+.radio-label input { margin-top: 4px; }
+
+.folder-row { display: flex; gap: 15px; align-items: center; margin-bottom: 18px; }
+.folder-name { font-weight: 750; }
+.hint { color: #657287; font-size: .9rem; }
+.advanced-settings { border-top: 1px solid #e1e7f0; margin: 24px 0 20px; padding-top: 18px; }
+.advanced-settings summary { cursor: pointer; color: #1f4f8b; font-weight: 750; }
+.advanced-settings > p { color: #59677b; font-size: .93rem; }
+.advanced-settings .control-grid { margin-bottom: 0; }
+
+.button { display: inline-flex; justify-content: center; align-items: center; border: 0; border-radius: 10px; padding: 11px 17px; font-weight: 750; cursor: pointer; text-decoration: none; }
+.button:disabled { cursor: not-allowed; opacity: .55; }
+.button-primary { width: 100%; background: #1f5aa6; color: #fff; margin-top: 18px; }
+.button-primary:not(:disabled):hover { background: #174983; }
+.button-secondary { background: #e7eef8; color: #1f4f8b; white-space: nowrap; }
+.button-secondary:hover { background: #d9e5f5; }
+.safety-note { border-left: 4px solid #d99a12; background: #fff8e6; border-radius: 6px; padding: 12px 14px; color: #5f4a18; }
+.log-heading { display: flex; justify-content: space-between; align-items: baseline; }
+.text-button { border: 0; background: none; color: #1f5aa6; cursor: pointer; font-weight: 700; }
+pre { min-height: 240px; max-height: 520px; overflow: auto; margin: 0; padding: 16px; border-radius: 10px; background: #121a2a; color: #e8edf5; font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: .88rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.site-footer { margin-top: 28px; color: #657287; font-size: .9rem; text-align: center; }
+
+@media (max-width: 760px) {
+  .page-shell { width: min(100% - 20px, 1040px); margin-top: 22px; }
+  .hero, .folder-row { align-items: flex-start; flex-direction: column; }
+  .control-grid, .control-grid-three { grid-template-columns: 1fr; }
+  .button-secondary { width: 100%; }
+}
