@@ -356,7 +356,20 @@ async function writeBytesToWebR(path, bytes) {
 async function writeHandleToWebR(path, fileHandle, description) {
   const file = await fileHandle.getFile();
   if (file.size === 0) throw new Error(`${description} is empty.`);
-  await writeBytesToWebR(path, new Uint8Array(await file.arrayBuffer()));
+
+  const chunkSize = 8 * 1024 * 1024; // 8 MB
+  await removeWebRFile(path);
+
+  for (let offset = 0; offset < file.size; offset += chunkSize) {
+    const chunk = new Uint8Array(
+      await file
+        .slice(offset, Math.min(offset + chunkSize, file.size))
+        .arrayBuffer()
+    );
+
+    await webR.FS.writeFile(path, chunk, offset === 0 ? "w" : "a");
+  }
+
   return file.size;
 }
 
@@ -456,84 +469,46 @@ async function prepareRun() {
   return { config, sourceFiles, badAppsBytes, totalBytes };
 }
 
-function rString(value) {
-  return JSON.stringify(String(value));
-}
-
-async function clearInputMount(mountPoint) {
-  try {
-    await webR.FS.unmount(mountPoint);
-  } catch {
-    // It may not yet be mounted.
-  }
-
-  try {
-    await webR.FS.rmdir(mountPoint);
-  } catch {
-    // It may not yet exist.
-  }
-}
-
 async function processFile(source, config, badAppsBytes, transaction, usedOutputNames) {
   await webR.evalRVoid("reset_browser_workspace()");
 
-  const inputMount = "/tmp/browser_input_mount";
-  await clearInputMount(inputMount);
+  const fileSize = await writeHandleToWebR(
+    "/tmp/browser_input.csv",
+    source.handle,
+    source.relativePath
+  );
 
-  const sourceFile = await source.handle.getFile();
-  if (sourceFile.size === 0) {
-    throw new Error(`${source.relativePath} is empty.`);
+  await writeBytesToWebR("/tmp/browser_bad_apps.csv", badAppsBytes);
+  await writeBytesToWebR(
+    "/tmp/browser_config.json",
+    new TextEncoder().encode(JSON.stringify(config))
+  );
+
+  await webR.evalRVoid(
+    "clean_browser_file('/tmp/browser_input.csv', '/tmp/browser_output', '/tmp/browser_bad_apps.csv', '/tmp/browser_config.json')"
+  );
+
+  const summary = await evaluateSummary();
+  const outputName = String(summary.output_file || "");
+  assertSafeOutputName(outputName);
+
+  if (usedOutputNames.has(outputName.toLowerCase())) {
+    throw new Error(`Two input files would create '${outputName}'. No output was retained.`);
   }
 
-  await webR.FS.mkdir(inputMount);
+  const cleanedBytes = await readWebRFile(`/tmp/browser_output/${outputName}`);
+  await transaction.write([outputName], cleanedBytes);
+  usedOutputNames.add(outputName.toLowerCase());
 
-  try {
-    // Mount the browser File directly inside webR rather than copying its
-    // entire contents into a JavaScript array first.
-    await webR.FS.mount("WORKERFS", { files: [sourceFile] }, inputMount);
-
-    const inputPath = `${inputMount}/${sourceFile.name}`;
-    const fileSize = sourceFile.size;
-
-    await writeBytesToWebR("/tmp/browser_bad_apps.csv", badAppsBytes);
-    await writeBytesToWebR(
-      "/tmp/browser_config.json",
-      new TextEncoder().encode(JSON.stringify(config))
-    );
-
-    await webR.evalRVoid(
-      `clean_browser_file(
-        ${rString(inputPath)},
-        "/tmp/browser_output",
-        "/tmp/browser_bad_apps.csv",
-        "/tmp/browser_config.json"
-      )`
-    );
-
-    const summary = await evaluateSummary();
-    const outputName = String(summary.output_file || "");
-    assertSafeOutputName(outputName);
-
-    if (usedOutputNames.has(outputName.toLowerCase())) {
-      throw new Error(`Two input files would create '${outputName}'. No output was retained.`);
-    }
-
-    const cleanedBytes = await readWebRFile(`/tmp/browser_output/${outputName}`);
-    await transaction.write([outputName], cleanedBytes);
-    usedOutputNames.add(outputName.toLowerCase());
-
-    for (const logFile of LOG_FILES) {
-      const bytes = await readWebRFileIfPresent(logFile.virtualPath);
-      if (bytes) await transaction.appendCsv(logFile.destination, bytes);
-    }
-
-    return {
-      ...summary,
-      input_bytes: fileSize,
-    };
-  } finally {
-    await clearInputMount(inputMount);
+  for (const logFile of LOG_FILES) {
+    const bytes = await readWebRFileIfPresent(logFile.virtualPath);
+    if (bytes) await transaction.appendCsv(logFile.destination, bytes);
   }
+
+  return {
+    ...summary,
+    input_bytes: fileSize,
+  };
 }
 
 async function runApp() {
