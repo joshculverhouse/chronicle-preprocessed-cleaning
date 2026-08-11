@@ -87,9 +87,21 @@ read_bad_apps <- function(path) {
 
 require_columns <- function(df, required) {
   missing <- setdiff(required, names(df))
+  
   if (length(missing)) {
-    stop("Missing required column(s): ", paste(missing, collapse = ", "), call. = FALSE)
+    columns_found <- if (length(names(df))) {
+      paste(names(df), collapse = ", ")
+    } else {
+      "[none]"
+    }
+    
+    stop(
+      "Missing required column(s): ", paste(missing, collapse = ", "),
+      "\nColumns read by webR: ", columns_found,
+      call. = FALSE
+    )
   }
+  
   invisible(TRUE)
 }
 
