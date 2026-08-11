@@ -239,28 +239,28 @@ async function writeFile(directory, name, data) {
 }
 
 async function appendFile(directory, name, data) {
+  const appendedBytes =
+    typeof data === "string"
+      ? new TextEncoder().encode(data)
+      : new Uint8Array(data);
+
   let handle;
   try {
     handle = await directory.getFileHandle(name, { create: false });
   } catch (error) {
     if (error.name !== "NotFoundError") throw error;
-    await writeFile(directory, name, data);
+    await writeFile(directory, name, appendedBytes);
     return;
   }
 
-  const existingSize = (await handle.getFile()).size;
-  const writable = await handle.createWritable({ keepExistingData: true });
-  try {
-    await writable.write({ type: "write", position: existingSize, data });
-    await writable.close();
-  } catch (error) {
-    try {
-      await writable.abort();
-    } catch {
-      // The stream may already be closed.
-    }
-    throw error;
-  }
+  const existingFile = await handle.getFile();
+  const existingBytes = new Uint8Array(await existingFile.arrayBuffer());
+
+  const combinedBytes = new Uint8Array(existingBytes.length + appendedBytes.length);
+  combinedBytes.set(existingBytes);
+  combinedBytes.set(appendedBytes, existingBytes.length);
+
+  await writeFile(directory, name, combinedBytes);
 }
 
 class OutputTransaction {
