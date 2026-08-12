@@ -239,28 +239,28 @@ async function writeFile(directory, name, data) {
 }
 
 async function appendFile(directory, name, data) {
-  const appendedBytes =
-    typeof data === "string"
-      ? new TextEncoder().encode(data)
-      : new Uint8Array(data);
-
   let handle;
   try {
     handle = await directory.getFileHandle(name, { create: false });
   } catch (error) {
     if (error.name !== "NotFoundError") throw error;
-    await writeFile(directory, name, appendedBytes);
+    await writeFile(directory, name, data);
     return;
   }
 
-  const existingFile = await handle.getFile();
-  const existingBytes = new Uint8Array(await existingFile.arrayBuffer());
-
-  const combinedBytes = new Uint8Array(existingBytes.length + appendedBytes.length);
-  combinedBytes.set(existingBytes);
-  combinedBytes.set(appendedBytes, existingBytes.length);
-
-  await writeFile(directory, name, combinedBytes);
+  const existingSize = (await handle.getFile()).size;
+  const writable = await handle.createWritable({ keepExistingData: true });
+  try {
+    await writable.write({ type: "write", position: existingSize, data });
+    await writable.close();
+  } catch (error) {
+    try {
+      await writable.abort();
+    } catch {
+      // The stream may already be closed.
+    }
+    throw error;
+  }
 }
 
 class OutputTransaction {
@@ -412,21 +412,71 @@ async function getBadAppsBytes() {
   return new Uint8Array(await response.arrayBuffer());
 }
 
+let webRSessionHasProcessedFile = false;
+let analysisSource = null;
+
+async function getAnalysisSource() {
+  if (analysisSource !== null) return analysisSource;
+
+  const response = await fetch("web/analysis.R", { cache: "no-store" });
+  if (!response.ok) throw new Error(`Could not load web/analysis.R (${response.status}).`);
+
+  analysisSource = await response.text();
+  return analysisSource;
+}
+
+async function startWebRSession({ initial = false } = {}) {
+  webRReady = false;
+  const session = new WebR({ channelType: ChannelType.PostMessage });
+
+  try {
+    log(initial ? "Starting R in the browser." : "Starting a fresh R session for the next file.");
+    await session.init();
+
+    log(
+      initial
+        ? "Loading the R packages needed for this pipeline."
+        : "Loading R packages for the next file."
+    );
+    await session.installPackages(R_PACKAGES);
+    await session.evalRVoid(await getAnalysisSource());
+
+    webR = session;
+    webRReady = true;
+    webRSessionHasProcessedFile = false;
+  } catch (error) {
+    try {
+      session.close();
+    } catch {
+      // The worker may have failed before the channel was fully created.
+    }
+    throw error;
+  }
+}
+
+function closeWebRSession() {
+  const session = webR;
+  webR = null;
+  webRReady = false;
+
+  try {
+    session?.close();
+  } catch {
+    // The worker may already have stopped.
+  }
+}
+
+async function restartWebRSession() {
+  closeWebRSession();
+  await new Promise((resolve) => window.setTimeout(resolve, 50));
+  await startWebRSession();
+}
+
 async function initialise() {
   try {
     setStatus("Loading R…", "status-loading");
-    log("Starting R in the browser.");
-    webR = new WebR({ channelType: ChannelType.PostMessage });
-    await webR.init();
+    await startWebRSession({ initial: true });
 
-    log("Loading the R packages needed for this pipeline. This is required only when the page first loads.");
-    await webR.installPackages(R_PACKAGES);
-
-    const response = await fetch("web/analysis.R", { cache: "no-store" });
-    if (!response.ok) throw new Error(`Could not load web/analysis.R (${response.status}).`);
-    await webR.evalRVoid(await response.text());
-
-    webRReady = true;
     setStatus("Ready", "status-ready");
     log("R is ready. Select the input and output folders.");
   } catch (error) {
@@ -496,8 +546,9 @@ async function processFile(source, config, badAppsBytes, transaction, usedOutput
     throw new Error(`Two input files would create '${outputName}'. No output was retained.`);
   }
 
-  const cleanedBytes = await readWebRFile(`/tmp/browser_output/${outputName}`);
+  let cleanedBytes = await readWebRFile(`/tmp/browser_output/${outputName}`);
   await transaction.write([outputName], cleanedBytes);
+  cleanedBytes = null;
   usedOutputNames.add(outputName.toLowerCase());
 
   for (const logFile of LOG_FILES) {
@@ -533,23 +584,35 @@ async function runApp() {
     let badAppTruncations = 0;
 
     for (let index = 0; index < prepared.sourceFiles.length; index += 1) {
-      const source = prepared.sourceFiles[index];
-      log(`Processing ${index + 1} of ${prepared.sourceFiles.length}: ${source.relativePath}`);
-      const summary = await processFile(
-        source,
-        prepared.config,
-        prepared.badAppsBytes,
-        transaction,
-        usedOutputNames
-      );
-      rowsRead += Number(summary.rows_read || 0);
-      rowsWritten += Number(summary.rows_written || 0);
-      longEvents += Number(summary.long_events || 0);
-      badAppTruncations += Number(summary.bad_app_truncations || 0);
-      log(
-        `Completed ${summary.output_file}: ${summary.rows_written} output row(s), ${summary.long_events} long event(s), ${summary.bad_app_truncations} bad-app truncation(s).`
-      );
-    }
+  const source = prepared.sourceFiles[index];
+
+  if (webRSessionHasProcessedFile) {
+    log("Refreshing R before the next file to release browser memory.");
+    await restartWebRSession();
+  }
+
+  log(`Processing ${index + 1} of ${prepared.sourceFiles.length}: ${source.relativePath}`);
+
+  // Ensures a retry starts with a fresh worker even if this file errors.
+  webRSessionHasProcessedFile = true;
+
+  const summary = await processFile(
+    source,
+    prepared.config,
+    prepared.badAppsBytes,
+    transaction,
+    usedOutputNames
+  );
+
+  rowsRead += Number(summary.rows_read || 0);
+  rowsWritten += Number(summary.rows_written || 0);
+  longEvents += Number(summary.long_events || 0);
+  badAppTruncations += Number(summary.bad_app_truncations || 0);
+
+  log(
+    `Completed ${summary.output_file}: ${summary.rows_written} output row(s), ${summary.long_events} long event(s), ${summary.bad_app_truncations} bad-app truncation(s).`
+  );
+}
 
     setStatus("Complete", "status-success");
     log(
@@ -563,11 +626,6 @@ async function runApp() {
     setStatus("Stopped", "status-error");
     log(`STOPPED: ${friendlyError(error)}`);
   } finally {
-    try {
-      if (webR) await webR.evalRVoid("reset_browser_workspace()");
-    } catch {
-      // Cleanup is best effort only.
-    }
     running = false;
     updateControls();
   }
