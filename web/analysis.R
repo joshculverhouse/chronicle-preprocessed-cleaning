@@ -552,6 +552,5 @@ reset_browser_workspace <- function() {
   unlink("/tmp/browser_output", recursive = TRUE, force = TRUE)
   unlink(c("/tmp/browser_input.csv", "/tmp/browser_bad_apps.csv", "/tmp/browser_config.json"), force = TRUE)
   browser_cleaning_result <<- NULL
-  gc(full = TRUE)
   invisible(NULL)
 }
